@@ -18,6 +18,10 @@ def dns_get(key):
 
 
 def dns_put(key, value):
+    if (len(key) + len(value) > 31015):
+        print("Key/Value pair too large")
+        return
+
     requests.post('https://dnsql.io/records/?key={}'.format(key), data=value)
 
 
