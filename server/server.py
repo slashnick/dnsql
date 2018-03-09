@@ -87,7 +87,7 @@ app = flask.Flask(__name__)
 
 @app.route('/records/', methods=['POST'])
 def add_record():
-    key = flask.request.args('key')
+    key = flask.request.args['key']
     value = flask.request.get_data(cache=False)
     write_zone_file(ZONE_FILE_PATH, key, value)
     reload_bind9()
