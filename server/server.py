@@ -1,7 +1,9 @@
 import flask
+import subprocess
 import sys
 
 
+ZONE_FILE_PATH = '/etc/bind/zones/db.dnsql.io'
 ZONE_PREFIX = \
 """$TTL 604800
 @ IN SOA dnsql1.nfrost.me. admin.dnsql.nfrost.me. (
@@ -65,6 +67,10 @@ def write_zone_file(filename, key, value):
             f.write(format_txt_line(key, value_part) + '\n')
 
 
+def reload_bind9():
+    subprocess.run(['/usr/bin/sudo', '/usr/sbin/service', 'bind9', 'reload'])
+
+
 def main():
     if len(sys.argv) < 2:
         print('usage: python %s zonefile' % sys.argv[0])
@@ -81,8 +87,12 @@ app = flask.Flask(__name__)
 
 @app.route('/records/', methods=['POST'])
 def add_record():
-    return 'Not implemented\n'
+    key = flask.request.args('key')
+    value = flask.request.get_data(cache=False)
+    write_zone_file(ZONE_FILE_PATH, key, value)
+    reload_bind9()
+    return flask.Response('', status=204)
 
 
 if __name__ == '__main__':
-    main()
+    app.run()
