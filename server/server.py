@@ -68,7 +68,8 @@ def write_zone_file(filename, key, value):
 
 
 def reload_bind9():
-    subprocess.run(['/usr/bin/sudo', '/usr/sbin/service', 'bind9', 'reload'])
+    subprocess.run(['/usr/bin/sudo', '/usr/sbin/service', 'bind9', 'reload'],
+                   check=True)
 
 
 def main():
