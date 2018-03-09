@@ -48,15 +48,15 @@ def encode_digest(digest):
     return encoded.decode('utf-8').rstrip('=').lower()
 
 
-def store_blob(blob, get_count=10):
+def store_blob(blob, get_count=11):
     """Write a blob to DNS at the appropriate key. Return the SHA-1 digest."""
     digest = hashlib.sha1(blob).digest()
     key = encode_digest(digest)
-    dns_put(key, blob, ttl=3600)
+    dns_put(key, blob, ttl=21600)
     for _ in range(get_count):
         if dns_get(key) is not None:
             raise Exception('TXT record for {} not found :('.format(key))
-        time.sleep(1)
+        time.sleep(0.5)
     return digest
 
 
