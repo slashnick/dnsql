@@ -9,12 +9,12 @@ import sys
 import time
 
 
-CHUNK_SIZE = 1000
+CHUNK_SIZE = 30000
 HASHES_PER_CHUNK = CHUNK_SIZE // 20
 
 
 def dns_get(key):
-    resolver = dns.resolver.Resolver()
+    resolver = dns.resolver.Resolver(configure=False)
     resolver.nameservers = ['8.8.8.8']
     try:
         answers = resolver.query('{}.dnsql.io'.format(key), 'TXT')
@@ -32,7 +32,7 @@ def dns_get(key):
 
 
 def dns_put(key, value, ttl=None):
-    if (len(key) + len(value) > 31015):
+    if len(key) + len(value) > 31015:
         raise ValueError("Key/Value pair too large")
 
     params = {'key': key}
@@ -43,20 +43,19 @@ def dns_put(key, value, ttl=None):
 
 
 def encode_digest(digest):
-    """Return the base64-encoded version of a digest, without any padding."""
-    return base64.b32encode(digest).decode('utf-8').rstrip('=').lower()
+    """Return the base32-encoded version of a digest, without any padding."""
+    encoded = base64.b32encode(digest)
+    return encoded.decode('utf-8').rstrip('=').lower()
 
 
 def store_blob(blob, get_count=10):
     """Write a blob to DNS at the appropriate key. Return the SHA-1 digest."""
     digest = hashlib.sha1(blob).digest()
     key = encode_digest(digest)
-    print('key=%s' % key)
-    print('(%d bytes) %s' % (len(blob), blob[:100]))
     dns_put(key, blob, ttl=3600)
     for _ in range(get_count):
-        if dns_get(key) is None:
-            print('NXDOMAIN')
+        if dns_get(key) is not None:
+            raise Exception('TXT record for {} not found :('.format(key))
         time.sleep(1)
     return digest
 
@@ -68,12 +67,10 @@ def store_file(f, size, level):
         return store_blob(chunk)
     else:
         chunk_size = HASHES_PER_CHUNK ** (level - 1) * CHUNK_SIZE
-        print('level = %d, chunk size = %d' % (level, chunk_size))
         blobs = []
         for pos in range(0, size, chunk_size):
             blobs.append(store_file(f, min(size - pos, chunk_size), level - 1))
         blob = b''.join(blobs)
-        print('Storing merkel node')
         return store_blob(blob)
 
 
