@@ -1,4 +1,4 @@
-#import flask
+import flask
 import sys
 
 
@@ -74,6 +74,14 @@ def main():
     key = 'test-key50'
     value = bytes([i % 256 for i in range(3 * 256)])
     write_zone_file(zone_file_name, key, value)
+
+
+app = flask.Flask(__name__)
+
+
+@app.route('/records/', methods=['POST'])
+def add_record():
+    return 'Not implemented\n'
 
 
 if __name__ == '__main__':
