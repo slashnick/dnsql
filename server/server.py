@@ -22,7 +22,7 @@ www IN CNAME @
 
 
 def format_byte(ch):
-    if ch < 0x20 or ch > 0x7e:
+    if ch < 0x20 or ch > 0x7e or ch == 0x5c:  # 0x5c = /
         return '\\%03d' % ch
     elif ch == 0x22:  # '"'
         return '\\"'
