@@ -60,11 +60,11 @@ def split_value(value):
         yield bytes([i // 254]) + value[i : i + 254]
 
 
-def write_zone_file(filename, key, value):
+def write_zone_file(filename, key, value, ttl=None):
     with open(filename, 'w') as f:
         f.write(ZONE_PREFIX)
         for value_part in split_value(value):
-            f.write(format_txt_line(key, value_part) + '\n')
+            f.write(format_txt_line(key, value_part, ttl=ttl) + '\n')
 
 
 def reload_bind9():
@@ -90,7 +90,12 @@ app = flask.Flask(__name__)
 def add_record():
     key = flask.request.args['key']
     value = flask.request.get_data(cache=False)
-    write_zone_file(ZONE_FILE_PATH, key, value)
+    if 'ttl' in flask.request.args:
+        ttl = int(flask.request.args['ttl'])
+    else:
+        ttl = None
+
+    write_zone_file(ZONE_FILE_PATH, key, value, ttl=ttl)
     reload_bind9()
     return flask.Response('', status=204)
 
