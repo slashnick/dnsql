@@ -15,6 +15,7 @@ ZONE_PREFIX = \
 @ IN CAA 0 issue "letsencrypt.org"
 @ IN CAA 0 issuewild ";"
 @ IN A 165.227.24.13
+www IN CNAME @
 """
 
 
