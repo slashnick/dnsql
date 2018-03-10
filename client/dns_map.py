@@ -54,7 +54,7 @@ def store_blob(blob, get_count=11):
     key = encode_digest(digest)
     dns_put(key, blob, ttl=21600)
     for _ in range(get_count):
-        if dns_get(key) is not None:
+        if dns_get(key) is None:
             raise Exception('TXT record for {} not found :('.format(key))
         time.sleep(0.5)
     return digest
