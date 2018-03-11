@@ -83,6 +83,12 @@ def fetch_file(f, key, level):
             digest = chunk[i : i + 20]
             fetch_file(f, encode_digest(digest), level - 1)
 
+def calculate_levels(filesize):
+    if filesize < CHUNK_SIZE:
+        return 0
+
+    return int(math.log(filesize // CHUNK_SIZE, HASHES_PER_CHUNK)) + 1
+
 
 def main():
     if len(sys.argv) != 3:
@@ -94,10 +100,7 @@ def main():
         size = f.tell()
         f.seek(0, os.SEEK_SET)
 
-        if size < CHUNK_SIZE:
-            levels = 0
-        else:
-            levels = int(math.log(size // CHUNK_SIZE, HASHES_PER_CHUNK)) + 1
+        levels = calculate_levels(size)
 
         root = store_file(f, size, levels)
     print(encode_digest(root))
