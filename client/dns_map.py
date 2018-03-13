@@ -90,6 +90,18 @@ def calculate_levels(filesize):
     return int(math.log(filesize // CHUNK_SIZE, HASHES_PER_CHUNK)) + 1
 
 
+class DnsVfs:
+    def __init__(self, root, filename):
+        self.root = root
+        self.filename = filename
+
+    def read(self, offset, amount):
+        print("I'm gonna read now")
+
+    def write(self):
+        print("I'm gonna write now")
+
+
 def main():
     if len(sys.argv) != 3:
         print('usage: python %s infile outfile' % sys.argv[0])
