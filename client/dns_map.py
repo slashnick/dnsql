@@ -96,9 +96,11 @@ class DnsVfs:
         self.filename = filename
 
     def read(self, offset, amount):
+        #TODO Implement me
         print("I'm gonna read now")
 
-    def write(self):
+    def write(self, buffer, offset, amount):
+        #TODO Implement me
         print("I'm gonna write now")
 
 
