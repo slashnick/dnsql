@@ -97,11 +97,11 @@ class DnsVfs:
 
     def read(self, offset, amount):
         #TODO Implement me
-        print("I'm gonna read now")
+        print("I'm gonna read {} bytes at {}".format(amount, offset))
 
-    def write(self, buffer, offset, amount):
+    def write(self, buffer, offset):
         #TODO Implement me
-        print("I'm gonna write now")
+        print("I'm gonna write '{}' at {}".format(buffer, offset))
 
 
 def main():

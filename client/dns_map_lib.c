@@ -12,7 +12,7 @@ int dns_fs_init(PythonObjects *state) {
     PyObject *name, *module, *DnsVfs_class;
 
     Py_Initialize();
-    PyObject* sysPath = PySys_GetObject((char*)"path");
+    PyObject* sysPath = PySys_GetObject("path");
     PyObject* programName = Py_BuildValue("s", ".");
     PyList_Append(sysPath, programName);
     Py_DECREF(programName);
@@ -22,9 +22,6 @@ int dns_fs_init(PythonObjects *state) {
         PyErr_Print();
         fprintf(stderr, "Failed to load script\n");
         return 1;
-    }
-    else {
-        puts("Woot");
     }
 
     DnsVfs_class = PyObject_GetAttrString(module, PY_OBJECT);
@@ -46,7 +43,6 @@ int dns_fs_init(PythonObjects *state) {
 int dns_fs_read(PythonObjects *state, int amount, int64_t offset) {
     PyObject *result;
 
-    printf("I'm gonna try to read in c\n");
     result = PyObject_CallMethod(state->class, "read", 
                                  "(O,l,i)", state->class, offset, amount);
 
@@ -66,10 +62,13 @@ int dns_fs_write(PythonObjects *state, void *bytes, int num_bytes,
     PyObject *result;
 
     result = PyObject_CallMethod(state->class, "write", 
-                                 "(b#, l)", bytes, num_bytes, offset);
+                                 "(O, y#, l)", 
+                                 state->class, bytes, num_bytes, offset);
 
     if(result == NULL) {
         // Probably should do something in this case
+        PyErr_Print();
+        fprintf(stderr, "Failed to call write\n");
         return 1;
     }
 
