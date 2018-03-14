@@ -1,12 +1,21 @@
 CC = clang
-CFLAGS = $(shell python3-config --cflags)
+WIGNORE = -Wno-missing-variable-declarations -Wno-unused-parameter \
+		  -Wno-unused-function
+CFLAGS = -Wextra -Werror $(WIGNORE) $(shell python3-config --cflags)
 LDFLAGS = $(shell python3-config --ldflags)
 
-driver: dns_map_lib.o
-	$(CC) $(LDFLAGS) -o $@ $^
+SRC = dnsql.c
 
-%.o: %.c
-	$(CC) $(CFLAGS) -c -o $@ $^
+.PHONY: clean format
+
+dnsql.so: $(SRC)
+	$(CC) $(CFLAGS) $(LDFLAGS) -fPIC -shared $^ -o $@
+
+dnsql.dylib: $(SRC)
+	$(CC) $(CFLAGS) $(LDFLAGS) -fPIC -dynamiclib $^ -o $@
 
 clean:
-	$(RM) driver *.o
+	rm -rf *.dylib *.so *.dSYM
+
+format:
+	clang-format -i $(SRC)
