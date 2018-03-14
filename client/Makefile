@@ -2,7 +2,7 @@ CC = clang
 CFLAGS = $(shell python3-config --cflags)
 LDFLAGS = $(shell python3-config --ldflags)
 
-driver: dns_map_c_driver.o
+driver: dns_map_lib.o
 	$(CC) $(LDFLAGS) -o $@ $^
 
 %.o: %.c
