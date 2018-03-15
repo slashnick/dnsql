@@ -8,14 +8,17 @@ SRC = dnsql.c
 
 .PHONY: clean format
 
-dnsql.so: $(SRC)
-	$(CC) $(CFLAGS) $(LDFLAGS) -fPIC -shared $^ -o $@
+dnsql.so: dnsql.o
+	$(CC) $(LDFLAGS) -fPIC -shared $^ -o $@
 
-dnsql.dylib: $(SRC)
-	$(CC) $(CFLAGS) $(LDFLAGS) -fPIC -dynamiclib $^ -o $@
+dnsql.dylib: dnsql.o
+	$(CC) $(LDFLAGS) -fPIC -dynamiclib $^ -o $@
+
+stuff: dnsql.o stuff.o
+	$(CC) $(LDFLAGS) -lsqlite3 $^ -o $@
 
 clean:
-	rm -rf *.dylib *.so *.dSYM
+	rm -rf *.dylib *.so *.dSYM *.o
 
 format:
 	clang-format -i $(SRC)
