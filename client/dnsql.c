@@ -89,7 +89,6 @@ int vfs_read(sqlite3_file *pFile, void *zBuf, int iAmt, sqlite_int64 iOfst) {
 
   memcpy(zBuf, result_buffer, iAmt);
 
-  // TODO Remove this when it actually matters
   Py_DECREF(result);
   return SQLITE_OK;
 }
@@ -108,7 +107,6 @@ int vfs_write(sqlite3_file *pFile, const void *zBuf, int iAmt,
     return 1;
   }
 
-  // TODO Remove this when it actually matters
   Py_DECREF(result);
   return SQLITE_OK;
 }
@@ -118,8 +116,18 @@ int vfs_truncate(sqlite3_file *pFile, sqlite_int64 size) { return SQLITE_OK; }
 int vfs_sync(sqlite3_file *pFile, int flags) { return SQLITE_OK; }
 
 int vfs_file_size(sqlite3_file *pFile, sqlite_int64 *pSize) {
-  // TODO
-  return SQLITE_OK;
+    PyObject *size_attr;
+
+    size_attr = PyObject_GetAttr(pFile->class, "size");
+
+    if(size_attr == NULL) {
+        PyErr_Print();
+        fprintf(stderr, "Failed to get size from object");
+        return SQLITE_ERROR;
+    }
+
+    *pSize = PyLong_FromLong(size_attr);
+    return SQLITE_OK;
 }
 
 int vfs_lock(sqlite3_file *pFile, int eLock) { return SQLITE_OK; }
@@ -211,24 +219,24 @@ int vfs_access(sqlite3_vfs *pVfs, const char *zName, int flags, int *pResOut) {
 }
 
 int dnsql_init() {
-  context *ctx;
-  sqlite3_vfs *vfs;
+    context *ctx;
+    sqlite3_vfs *vfs;
 
-  ctx = malloc(sizeof(context));
-  vfs = malloc(sizeof(sqlite3_vfs));
+    ctx = malloc(sizeof(context));
+    vfs = malloc(sizeof(sqlite3_vfs));
 
-  ctx->parent = sqlite3_vfs_find(NULL);
-  memcpy(vfs, ctx->parent, sizeof(*vfs));
-  vfs->zName = "dnsql";
-  vfs->pAppData = &ctx;
-  vfs->szOsFile = sizeof(dnsql_file);
-  vfs->xOpen = vfs_open;
-  vfs->xAccess = vfs_access;
-  vfs->xDelete = vfs_delete;
+    ctx->parent = sqlite3_vfs_find(NULL);
+    memcpy(vfs, ctx->parent, sizeof(*vfs));
+    vfs->zName = "dnsql";
+    vfs->pAppData = &ctx;
+    vfs->szOsFile = sizeof(dnsql_file);
+    vfs->xOpen = vfs_open;
+    vfs->xAccess = vfs_access;
+    vfs->xDelete = vfs_delete;
 
-  sqlite3_vfs_register(vfs, 1);
+    sqlite3_vfs_register(vfs, 1);
 
-  return SQLITE_OK;
+    return SQLITE_OK;
 }
 
 int sqlite3_dnsql_init(sqlite3 *db, char **pzErrMsg,
