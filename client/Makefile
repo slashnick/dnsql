@@ -1,7 +1,7 @@
 CC = clang
 WIGNORE = -Wno-missing-variable-declarations -Wno-unused-parameter \
 		  -Wno-unused-function
-CFLAGS = -Wextra -Werror $(WIGNORE) $(shell python3-config --cflags)
+CFLAGS = -g -Wall -Wextra -Werror $(WIGNORE) $(shell python3-config --cflags)
 LDFLAGS = $(shell python3-config --ldflags)
 
 SRC = dnsql.c

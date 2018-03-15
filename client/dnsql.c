@@ -117,8 +117,9 @@ int vfs_sync(sqlite3_file *pFile, int flags) { return SQLITE_OK; }
 
 int vfs_file_size(sqlite3_file *pFile, sqlite_int64 *pSize) {
     PyObject *size_attr;
+    dnsql_file *file = (dnsql_file *)pFile;
 
-    size_attr = PyObject_GetAttr(pFile->class, "size");
+    size_attr = PyObject_GetAttrString(file->class, "size");
 
     if(size_attr == NULL) {
         PyErr_Print();
@@ -126,7 +127,7 @@ int vfs_file_size(sqlite3_file *pFile, sqlite_int64 *pSize) {
         return SQLITE_ERROR;
     }
 
-    *pSize = PyLong_FromLong(size_attr);
+    *pSize = PyLong_AsLong(size_attr);
     return SQLITE_OK;
 }
 
@@ -159,7 +160,8 @@ int vfs_open(sqlite3_vfs *pVfs, const char *zName, sqlite3_file *pFile,
 
   printf("dnsql_open\n");
 
-  Py_Initialize();
+  /* PyEval_InitThreads(); */
+  /* Py_Initialize(); */
 
   sys_path = PySys_GetObject("path");
 
@@ -173,7 +175,6 @@ int vfs_open(sqlite3_vfs *pVfs, const char *zName, sqlite3_file *pFile,
   // Implicit Py_INCREF(prog_name)
 
   if (dot_str == NULL) {
-    Py_DECREF(sys_path);
     PyErr_Print();
     fprintf(stderr, "Failed to build dot string");
     return SQLITE_ERROR;
