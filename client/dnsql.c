@@ -8,7 +8,7 @@
 SQLITE_EXTENSION_INIT1
 
 int sqlite3_dnsql_init(sqlite3 *, char **, const sqlite3_api_routines *);
-static int dnsql_init(void);
+int dnsql_init(void);
 
 static int vfs_close(sqlite3_file *);
 static int vfs_read(sqlite3_file *, void *, int iAmt, sqlite3_int64);

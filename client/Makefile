@@ -1,24 +1,24 @@
 CC = clang
 WIGNORE = -Wno-missing-variable-declarations -Wno-unused-parameter \
 		  -Wno-unused-function
-CFLAGS = -g -Wall -Wextra -Werror $(WIGNORE) $(shell python3-config --cflags)
-LDFLAGS = $(shell python3-config --ldflags)
+CFLAGS = -fPIC -g -Wall -Wextra -Werror $(WIGNORE) $(shell python3-config --cflags)
+LDFLAGS = $(shell python3-config --ldflags) -lsqlite3
 
 SRC = dnsql.c
 
 .PHONY: clean format
 
 dnsql.so: dnsql.o
-	$(CC) $(LDFLAGS) -fPIC -shared $^ -o $@
+	$(CC) $(CFLAGS) $(LDFLAGS) -fPIC -shared $^ -o $@
 
 dnsql.dylib: dnsql.o
-	$(CC) $(LDFLAGS) -fPIC -dynamiclib $^ -o $@
+	$(CC) $(CFLAGS) $(LDFLAGS) -fPIC -dynamiclib $^ -o $@
 
-stuff: dnsql.o stuff.o
-	$(CC) $(LDFLAGS) -lsqlite3 $^ -o $@
+stuff: stuff.o
+	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@
 
 clean:
-	rm -rf *.dylib *.so *.dSYM *.o
+	rm -rf *.dylib *.so *.dSYM *.o stuff
 
 format:
 	clang-format -i $(SRC)
