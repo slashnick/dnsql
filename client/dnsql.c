@@ -160,8 +160,7 @@ int vfs_open(sqlite3_vfs *pVfs, const char *zName, sqlite3_file *pFile,
 
   printf("dnsql_open\n");
 
-  /* PyEval_InitThreads(); */
-  /* Py_Initialize(); */
+  Py_Initialize();
 
   sys_path = PySys_GetObject("path");
 
@@ -192,8 +191,9 @@ int vfs_open(sqlite3_vfs *pVfs, const char *zName, sqlite3_file *pFile,
     return SQLITE_ERROR;
   }
 
-  DnsVfs_class = PyObject_GetAttrString(module, "dnsmap");
+  DnsVfs_class = PyObject_GetAttrString(module, "DnsVfs");
   // Implicit Py_INCREF(DnsVfs_class)
+  fprintf(stderr, "Finished openning\n");
 
   if (DnsVfs_class == NULL) {
     Py_DECREF(DnsVfs_class);
@@ -207,6 +207,7 @@ int vfs_open(sqlite3_vfs *pVfs, const char *zName, sqlite3_file *pFile,
   file->base.pMethods = &dnsql_io_methods;
   file->module = module;
   file->class = DnsVfs_class;
+
 
   return SQLITE_OK;
 }

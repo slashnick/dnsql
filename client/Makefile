@@ -6,7 +6,9 @@ LDFLAGS = $(shell python3-config --ldflags) -lsqlite3
 
 SRC = dnsql.c
 
-.PHONY: clean format
+.PHONY: all clean format
+
+all: dnsql.so stuff
 
 dnsql.so: dnsql.o
 	$(CC) $(CFLAGS) $(LDFLAGS) -fPIC -shared $^ -o $@
