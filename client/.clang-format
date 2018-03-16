@@ -32,7 +32,9 @@ BraceWrapping:
   BeforeCatch:     false
   BeforeElse:      false
   IndentBraces:    false
-  SplitEmptyFunctionBody: true
+  SplitEmptyFunction: true
+  SplitEmptyRecord: true
+  SplitEmptyNamespace: true
 BreakBeforeBinaryOperators: None
 BreakBeforeBraces: Attach
 BreakBeforeInheritanceComma: false
@@ -52,7 +54,10 @@ DerivePointerAlignment: true
 DisableFormat:   false
 ExperimentalAutoDetectBinPacking: false
 FixNamespaceComments: true
-ForEachMacros:   [ foreach, Q_FOREACH, BOOST_FOREACH ]
+ForEachMacros:   
+  - foreach
+  - Q_FOREACH
+  - BOOST_FOREACH
 IncludeCategories: 
   - Regex:           '^<.*\.h>'
     Priority:        1
@@ -84,6 +89,7 @@ PenaltyReturnTypeOnItsOwnLine: 200
 PointerAlignment: Left
 ReflowComments:  true
 SortIncludes:    true
+SortUsingDeclarations: true
 SpaceAfterCStyleCast: false
 SpaceAfterTemplateKeyword: true
 SpaceBeforeAssignmentOperators: true
