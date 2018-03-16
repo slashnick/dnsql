@@ -34,7 +34,7 @@ typedef struct {
 typedef struct {
     sqlite3_file base;
     PyObject *module;
-    PyObject *class;
+    PyObject *object;
 } dnsql_file;
 
 static const sqlite3_io_methods dnsql_io_methods = {
@@ -69,8 +69,7 @@ int vfs_read(sqlite3_file *pFile, void *zBuf, int iAmt, sqlite_int64 iOfst) {
     Py_ssize_t result_size;
     dnsql_file *file = (dnsql_file *)pFile;
 
-    result = PyObject_CallMethod(file->class, "read", "(O,l,i)", file->class,
-                                 iOfst, iAmt);
+    result = PyObject_CallMethod(file->object, "read", "(l,i)", iOfst, iAmt);
 
     if (result == NULL) {
         PyErr_Print();
@@ -102,8 +101,7 @@ int vfs_write(sqlite3_file *pFile, const void *zBuf, int iAmt,
     PyObject *result;
     dnsql_file *file = (dnsql_file *)pFile;
 
-    result = PyObject_CallMethod(file->class, "write", "(O, y#, l)",
-                                 file->class, zBuf, iAmt, iOfst);
+    result = PyObject_CallMethod(file->object, "write", "(y#,l)", zBuf, iAmt, iOfst);
 
     if (result == NULL) {
         PyErr_Print();
@@ -127,7 +125,7 @@ int vfs_file_size(sqlite3_file *pFile, sqlite_int64 *pSize) {
     PyObject *size_attr;
     dnsql_file *file = (dnsql_file *)pFile;
 
-    size_attr = PyObject_GetAttrString(file->class, "size");
+    size_attr = PyObject_GetAttrString(file->object, "size");
 
     if (size_attr == NULL) {
         PyErr_Print();
@@ -168,7 +166,7 @@ int vfs_device_characteristics(sqlite3_file *pFile) {
 int vfs_open(sqlite3_vfs *pVfs, const char *zName, sqlite3_file *pFile,
              int flags, int *pOutFlags) {
     dnsql_file *file;
-    PyObject *sys_path, *dot_str, *module, *DnsVfs_class;
+    PyObject *sys_path, *dot_str, *module, *DnsVfs_class, *dns_vfs_object;
 
     Py_Initialize();
 
@@ -212,10 +210,21 @@ int vfs_open(sqlite3_vfs *pVfs, const char *zName, sqlite3_file *pFile,
         return SQLITE_ERROR;
     }
 
+    dns_vfs_object = PyObject_CallFunction(DnsVfs_class, "(s)", zName);
+    Py_DECREF(DnsVfs_class);
+
+    if (dns_vfs_object == NULL) {
+        Py_DECREF(DnsVfs_class);
+        Py_DECREF(module);
+        PyErr_Print();
+        fprintf(stderr, "Could not construct object\n");
+        return SQLITE_ERROR;
+    }
+
     file = (dnsql_file *)pFile;
     file->base.pMethods = &dnsql_io_methods;
     file->module = module;
-    file->class = DnsVfs_class;
+    file->object = dns_vfs_object;
 
     return SQLITE_OK;
 }

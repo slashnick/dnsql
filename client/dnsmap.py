@@ -91,9 +91,8 @@ def calculate_levels(filesize):
 
 
 class DnsVfs:
-    def __init__(self, root, filename):
+    def __init__(self, root):
         self.root = root
-        self.filename = filename
 
     def read(self, offset, amount):
         #TODO Implement me
