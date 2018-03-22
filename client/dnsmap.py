@@ -14,13 +14,19 @@ CHUNK_SIZE = 4096
 HASHES_PER_CHUNK = CHUNK_SIZE // 20
 
 
-def dns_get(key):
+def dns_get(key, retries=3):
+    if not key:
+        return b''
+
     resolver = dns.resolver.Resolver(configure=False)
     resolver.nameservers = ['8.8.8.8']
     try:
         answers = resolver.query('{}.dnsql.io'.format(key), 'TXT')
     except dns.resolver.NXDOMAIN:
-        return None
+        if retries == 0:
+            return None
+        else:
+            return dns_get(key, retries - 1)
 
     entries = [entry.strings[0] for entry in answers]
     entries.sort(key=lambda x : x[0])
@@ -57,7 +63,7 @@ def store_blob(blob, get_count=11):
     for _ in range(get_count):
         if dns_get(key) is None:
             raise Exception('TXT record for {} not found :('.format(key))
-        time.sleep(0.5)
+        #time.sleep(0.1)
     return digest
 
 
@@ -93,14 +99,13 @@ def calculate_levels(filesize):
 
 class DnsVfs(object):
 
-    def __init__(self, root):
-        self.root = root
-        self.size = 0
-        self.levels = 1
-        self.filename = root
-        # TODO
-        self.root = 'v5s6euxjva7zpnfnvxeaasnmrrnc2obm'
-        self.size = 8192
+    def __init__(self, filename):
+        self.filename = filename
+        with open(filename) as f:
+            self.size = int(f.readline().strip())
+            self.root = f.readline().strip()
+
+        self.levels = calculate_levels(self.size)
 
     def get_block_hash(self, index, level=0):
         """Get the hash where a block is located. level 0 = leaf
@@ -116,12 +121,6 @@ class DnsVfs(object):
         digest = parent[offset * 20 : offset * 20 + 20]
         return encode_digest(digest)
 
-    def block_range(self, offset, amount, increment=CHUNK_SIZE):
-        """Return the range of blocks that contain [offset:offset + amount]."""
-        start_block = offset // increment
-        end_block = (offset + amount - 1) // increment
-        return range(start_block, end_block + 1)
-
     def read(self, offset, amount):
         # 0-length reads are sketchy
         if amount == 0:
@@ -136,36 +135,71 @@ class DnsVfs(object):
         rv = data[offset % CHUNK_SIZE : offset % CHUNK_SIZE + amount]
         return rv
 
+    def write_data(self, block_hash, buf, offset):
+        """Write a buffer to a single data block."""
+        old_data = dns_get(block_hash)
+        start = offset % CHUNK_SIZE
+
+        new_data = old_data[:start] + buf[:CHUNK_SIZE - start]
+        new_data += old_data[len(new_data):]
+        if new_data == old_data:
+            return hashlib.sha1(new_data).digest()
+        return store_blob(new_data)
+
     def write_tree(self, block_hash, buf, offset, level):
-        print('write? wtf')
-        return
+        if level == 0:
+            return self.write_data(block_hash, buf, offset)
+
+        print('write_tree(%s, %d)' % (block_hash, offset))
+
         old_data = dns_get(block_hash)
         # The number of bytes stored in each subtree
         tree_size = CHUNK_SIZE * HASHES_PER_CHUNK ** (level - 1)
         # The index of the start and end child trees at the next level
         start_tree = offset // tree_size
-        end_tree = (offset + amount - 1) // tree_size
+        end_tree = (offset + len(buf) - 1) // tree_size
+
         # Since we're not overwriting all the child trees, initialize data to
         # the hashes of the trees up until the start tree
         new_data = old_data[:(start_tree % HASHES_PER_CHUNK) * 20]
         for tree in range(start_tree, end_tree + 1):
             ndx = tree % HASHES_PER_CHUNK
-            child = encode_digest(old_data[ndx : ndx + 20])
+            child = encode_digest(old_data[ndx * 20 : ndx * 20 + 20])
             # Compute the offset and data slice for the subtree
             sub_off = max(tree * tree_size, offset)
-            # Don't pass too much data: (sub_off % tree_size) + len(sub_data)
-            sub_data = None #TODO
-            new_data += self.write_tree(child, )
+            start = max(sub_off - offset, 0)
+            end = tree_size - start
+            sub_data = buf[start:end]
+            new_data += self.write_tree(child, sub_data, start, level - 1)
+        # Tack on trailing data after write
+        new_data += old_data[len(new_data):]
+        if new_data == old_data:
+            return hashlib.sha1(new_data).digest()
+        return store_blob(new_data)
 
     def write(self, buf, offset):
         if len(buf) == 0:
             return
 
-        # TODO: increase size?
-        # TODO: add a level to the tree?
+        if offset + len(buf) > self.size:
+            self.size = offset + len(buf)
+            level = calculate_levels(self.size)
+            if level != self.levels:
+                # TODO: add a new level
+                print('Oh no! Need to add new level')
+                pass
 
-        self.root = self.write_tree(self.root, buf, offset)
-        print("I'm gonna write '{}' at {}".format(buffer, offset))
+        new_hash = self.write_tree(self.root, buf, offset, self.levels)
+        new_root = encode_digest(new_hash)
+        if new_root != self.root:
+            self.root = new_root
+            print('New root:', self.root)
+            self.write_metafile()
+
+    def write_metafile(self):
+        with open(self.filename, 'w') as f:
+            f.write(str(self.size) + '\n')
+            f.write(self.root + '\n')
 
     """TODO: truncate"""
 
@@ -182,11 +216,11 @@ def main():
 
         levels = calculate_levels(size)
 
-        root = store_file(f, size, levels)
-    print(encode_digest(root))
+        root = encode_digest(store_file(f, size, levels))
 
-    with open(sys.argv[2], 'wb') as f:
-        fetch_file(f, encode_digest(root), levels)
+    with open(sys.argv[2], 'w') as f:
+        f.write(str(size) + '\n')
+        f.write(root + '\n')
 
 
 if __name__ == '__main__':

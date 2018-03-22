@@ -24,7 +24,6 @@ static int vfs_sector_size(sqlite3_file *);
 static int vfs_device_characteristics(sqlite3_file *);
 
 static int vfs_open(sqlite3_vfs *, const char *, sqlite3_file *, int, int *);
-static int vfs_delete(sqlite3_vfs *, const char *, int);
 static int vfs_access(sqlite3_vfs *, const char *, int, int *);
 
 typedef struct {
@@ -236,10 +235,6 @@ int vfs_open(sqlite3_vfs *pVfs, const char *zName, sqlite3_file *pFile,
     return SQLITE_OK;
 }
 
-int vfs_delete(sqlite3_vfs *pVfs, const char *zName, int syncDir) {
-    return SQLITE_OK;
-}
-
 int vfs_access(sqlite3_vfs *pVfs, const char *zName, int flags, int *pResOut) {
     sqlite3_vfs *parent;
     const char *journal_suffix = "-journal";
@@ -271,7 +266,6 @@ int dnsql_init() {
     vfs->pAppData = ctx;
     vfs->xOpen = vfs_open;
     vfs->xAccess = vfs_access;
-    vfs->xDelete = vfs_delete;
     vfs->xDlOpen = NULL;
     // Make sure we allocate enough space for both the DNSQL VFS and the
     // fallback unix VFS
