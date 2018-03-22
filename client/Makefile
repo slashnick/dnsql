@@ -1,4 +1,4 @@
-CC = clang
+CC = gcc
 WIGNORE = -Wno-missing-variable-declarations -Wno-unused-parameter \
 		  -Wno-unused-function
 CFLAGS = -fPIC -g -Wall -Wextra -Werror $(WIGNORE) $(shell python3-config --cflags)

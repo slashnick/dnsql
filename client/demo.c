@@ -46,7 +46,6 @@ static void query(sqlite3 *db, const char *sql, int print_result) {
 
 int main(int argc, char *argv[]) {
     sqlite3 *db;
-    int rc;
 
     if (argc != 2) {
         fprintf(stderr, "usage: %s file\n", argv[0]);
@@ -57,9 +56,8 @@ int main(int argc, char *argv[]) {
 
     sqlite3_open(argv[1], &db);
 
-    // Disable journal files
-    rc = sqlite3_exec(db, "PRAGMA journal_mode = DELETE;", NULL, NULL, NULL);
-    assert(rc == SQLITE_OK);
+    // Disable journaling
+    sqlite3_exec(db, "PRAGMA journal_mode = DELETE;", NULL, NULL, NULL);
 
     query(db, "SELECT * FROM students", 1);
     query(db, "SELECT * FROM students WHERE house='Gryffindor'", 1);
