@@ -150,8 +150,6 @@ class DnsVfs(object):
         if level == 0:
             return self.write_data(block_hash, buf, offset)
 
-        print('write_tree(%s, %d)' % (block_hash, offset))
-
         old_data = dns_get(block_hash)
         # The number of bytes stored in each subtree
         tree_size = CHUNK_SIZE * HASHES_PER_CHUNK ** (level - 1)
@@ -193,7 +191,6 @@ class DnsVfs(object):
         new_root = encode_digest(new_hash)
         if new_root != self.root:
             self.root = new_root
-            print('New root:', self.root)
             self.write_metafile()
 
     def write_metafile(self):

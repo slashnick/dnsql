@@ -5,4 +5,4 @@ venv
 *.dylib
 *.so
 *.o
-client/stuff
+client/demo

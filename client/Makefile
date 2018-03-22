@@ -8,19 +8,19 @@ SRC = dnsql.c
 
 .PHONY: all clean format
 
-all: dnsql.so stuff
+all: dnsql.so demo
 
 dnsql.so: dnsql.o
-	$(CC) $(CFLAGS) $(LDFLAGS) -fPIC -shared $^ -o $@
+	$(CC) $(CFLAGS) $(LDFLAGS) -shared $^ -o $@
 
 dnsql.dylib: dnsql.o
-	$(CC) $(CFLAGS) $(LDFLAGS) -fPIC -dynamiclib $^ -o $@
+	$(CC) $(CFLAGS) $(LDFLAGS) -dynamiclib $^ -o $@
 
-stuff: stuff.o
+demo: demo.o
 	$(CC) $(CFLAGS) $(LDFLAGS) $^ -o $@
 
 clean:
-	rm -rf *.dylib *.so *.dSYM *.o stuff
+	rm -rf *.dylib *.so *.dSYM *.o demo
 
 format:
 	clang-format -i $(SRC)
