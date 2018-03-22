@@ -101,7 +101,8 @@ int vfs_write(sqlite3_file *pFile, const void *zBuf, int iAmt,
     PyObject *result;
     dnsql_file *file = (dnsql_file *)pFile;
 
-    result = PyObject_CallMethod(file->object, "write", "(y#,l)", zBuf, iAmt, iOfst);
+    result =
+        PyObject_CallMethod(file->object, "write", "(y#,l)", zBuf, iAmt, iOfst);
 
     if (result == NULL) {
         PyErr_Print();
@@ -155,18 +156,24 @@ int vfs_file_control(sqlite3_file *pFile, int op, void *pArg) {
 
 int vfs_sector_size(sqlite3_file *pFile) {
     // TODO: double-check this
-    return 1 << 14;
+    return 1 << 12;
 }
 
 int vfs_device_characteristics(sqlite3_file *pFile) {
     // TODO
-    return SQLITE_IOCAP_ATOMIC16K;
+    return 0;
 }
 
 int vfs_open(sqlite3_vfs *pVfs, const char *zName, sqlite3_file *pFile,
              int flags, int *pOutFlags) {
+    sqlite3_vfs *parent;
     dnsql_file *file;
     PyObject *sys_path, *dot_str, *module, *DnsVfs_class, *dns_vfs_object;
+
+    parent = ((context *)pVfs->pAppData)->parent;
+    if ((flags & SQLITE_OPEN_MAIN_DB) == 0) {
+        return parent->xOpen(parent, zName, pFile, flags, pOutFlags);
+    }
 
     Py_Initialize();
 
@@ -234,6 +241,20 @@ int vfs_delete(sqlite3_vfs *pVfs, const char *zName, int syncDir) {
 }
 
 int vfs_access(sqlite3_vfs *pVfs, const char *zName, int flags, int *pResOut) {
+    sqlite3_vfs *parent;
+    const char *journal_suffix = "-journal";
+    size_t suffix_len, name_len;
+
+    parent = ((context *)pVfs->pAppData)->parent;
+
+    suffix_len = strlen(journal_suffix);
+    name_len = strlen(zName);
+    if (name_len > suffix_len &&
+        !strcmp(zName + name_len - suffix_len, journal_suffix)) {
+        return parent->xAccess(parent, zName, flags, pResOut);
+    }
+
+    *pResOut = 0;
     return SQLITE_OK;
 }
 
@@ -247,13 +268,18 @@ int dnsql_init() {
     ctx->parent = sqlite3_vfs_find(NULL);
     memcpy(vfs, ctx->parent, sizeof(*vfs));
     vfs->zName = "dnsql";
-    vfs->pAppData = &ctx;
-    vfs->szOsFile = sizeof(dnsql_file);
+    vfs->pAppData = ctx;
     vfs->xOpen = vfs_open;
     vfs->xAccess = vfs_access;
     vfs->xDelete = vfs_delete;
+    vfs->xDlOpen = NULL;
+    // Make sure we allocate enough space for both the DNSQL VFS and the
+    // fallback unix VFS
+    if (sizeof(dnsql_file) > (size_t)vfs->szOsFile) {
+        vfs->szOsFile = sizeof(dnsql_file);
+    }
 
-    sqlite3_vfs_register(vfs, 1);
+    sqlite3_vfs_register(vfs, 1 /* make default */);
 
     return SQLITE_OK;
 }

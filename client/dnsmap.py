@@ -9,7 +9,8 @@ import sys
 import time
 
 
-CHUNK_SIZE = 30000
+# TODO: CHUNK_SIZE = 16384
+CHUNK_SIZE = 4096
 HASHES_PER_CHUNK = CHUNK_SIZE // 20
 
 
@@ -90,17 +91,83 @@ def calculate_levels(filesize):
     return int(math.log(filesize // CHUNK_SIZE, HASHES_PER_CHUNK)) + 1
 
 
-class DnsVfs:
+class DnsVfs(object):
+
     def __init__(self, root):
         self.root = root
+        self.size = 0
+        self.levels = 1
+        self.filename = root
+        # TODO
+        self.root = 'v5s6euxjva7zpnfnvxeaasnmrrnc2obm'
+        self.size = 8192
+
+    def get_block_hash(self, index, level=0):
+        """Get the hash where a block is located. level 0 = leaf
+
+        TODO: optimize
+        """
+        if level == self.levels:
+            return self.root
+
+        parent_id = self.get_block_hash(index // HASHES_PER_CHUNK, level + 1)
+        parent = dns_get(parent_id)
+        offset = index % HASHES_PER_CHUNK
+        digest = parent[offset * 20 : offset * 20 + 20]
+        return encode_digest(digest)
+
+    def block_range(self, offset, amount, increment=CHUNK_SIZE):
+        """Return the range of blocks that contain [offset:offset + amount]."""
+        start_block = offset // increment
+        end_block = (offset + amount - 1) // increment
+        return range(start_block, end_block + 1)
 
     def read(self, offset, amount):
-        #TODO Implement me
-        print("I'm gonna read {} bytes at {}".format(amount, offset))
+        # 0-length reads are sketchy
+        if amount == 0:
+            return b''
 
-    def write(self, buffer, offset):
-        #TODO Implement me
+        start_block = offset // CHUNK_SIZE
+        end_block = (offset + amount - 1) // CHUNK_SIZE
+
+        data = b''.join(dns_get(self.get_block_hash(index))
+                        for index in range(start_block, end_block + 1))
+        start = offset % CHUNK_SIZE
+        rv = data[offset % CHUNK_SIZE : offset % CHUNK_SIZE + amount]
+        return rv
+
+    def write_tree(self, block_hash, buf, offset, level):
+        print('write? wtf')
+        return
+        old_data = dns_get(block_hash)
+        # The number of bytes stored in each subtree
+        tree_size = CHUNK_SIZE * HASHES_PER_CHUNK ** (level - 1)
+        # The index of the start and end child trees at the next level
+        start_tree = offset // tree_size
+        end_tree = (offset + amount - 1) // tree_size
+        # Since we're not overwriting all the child trees, initialize data to
+        # the hashes of the trees up until the start tree
+        new_data = old_data[:(start_tree % HASHES_PER_CHUNK) * 20]
+        for tree in range(start_tree, end_tree + 1):
+            ndx = tree % HASHES_PER_CHUNK
+            child = encode_digest(old_data[ndx : ndx + 20])
+            # Compute the offset and data slice for the subtree
+            sub_off = max(tree * tree_size, offset)
+            # Don't pass too much data: (sub_off % tree_size) + len(sub_data)
+            sub_data = None #TODO
+            new_data += self.write_tree(child, )
+
+    def write(self, buf, offset):
+        if len(buf) == 0:
+            return
+
+        # TODO: increase size?
+        # TODO: add a level to the tree?
+
+        self.root = self.write_tree(self.root, buf, offset)
         print("I'm gonna write '{}' at {}".format(buffer, offset))
+
+    """TODO: truncate"""
 
 
 def main():
