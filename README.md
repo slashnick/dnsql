@@ -22,8 +22,8 @@ To run the demo:
 
 # Server setup
 
-The server is currently running at dnsql.io, but if you want to run it locally
-it will be similar to .
+The server is currently running at dnsql.io, but if you want to run it locally,
+you will need another bind9 instance.
 
 Note that the `sudo service bind9 reload` command in `reload_bind9()` is
 specific to our setup, as is the `ZONE_FILE_PATH`.
