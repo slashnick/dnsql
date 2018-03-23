@@ -25,7 +25,7 @@ To run the demo:
 The server is currently running at dnsql.io, but if you want to run it locally
 it will be similar to .
 
-`Note that the `sudo service bind9 reload` command in `reload_bind9()` is
+Note that the `sudo service bind9 reload` command in `reload_bind9()` is
 specific to our setup, as is the `ZONE_FILE_PATH`.
 
     cd server
